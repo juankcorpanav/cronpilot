@@ -1,65 +1,76 @@
+/**
+ * index.js — Public API for cronpilot
+ */
+
 const { parseCron } = require('./parser');
 const { humanize } = require('./humanizer');
-const { isValidTimezone, getUtcOffset, getNextFireTimes } = require('./timezone');
+const { getNextFireTimes, isValidTimezone } = require('./timezone');
 const { buildScheduleInfo, validateSchedule } = require('./scheduler');
-const { getPresets, getPresetsByCategory, findPresetByExpression } = require('./presets');
+const { getPresets, findPresetByExpression } = require('./presets');
+const { diffExpressions, describeDiff } = require('./diff');
 
 /**
- * Parse and describe a cron expression with optional timezone.
- * @param {string} expression - Cron expression
- * @param {string} [timezone='UTC'] - IANA timezone string
- * @returns {Object}
+ * Describe a cron expression in plain English.
+ * @param {string} expression
+ * @returns {string}
  */
-function describe(expression, timezone = 'UTC') {
-  const parsed = parseCron(expression);
-  const readable = humanize(expression);
-  const schedule = buildScheduleInfo(expression, timezone);
-  const preset = findPresetByExpression(expression);
-  return {
-    expression,
-    parsed,
-    readable,
-    timezone,
-    utcOffset: getUtcOffset(timezone),
-    schedule,
-    preset: preset || null,
-  };
+function describe(expression) {
+  return humanize(expression);
 }
 
 /**
  * Validate a cron expression and optional timezone.
  * @param {string} expression
- * @param {string} [timezone='UTC']
+ * @param {string} [timezone]
  * @returns {{ valid: boolean, errors: string[] }}
  */
-function validate(expression, timezone = 'UTC') {
-  const scheduleErrors = validateSchedule(expression, timezone);
-  const timezoneValid = isValidTimezone(timezone);
-  const errors = [...scheduleErrors];
-  if (!timezoneValid) errors.push(`Invalid timezone: ${timezone}`);
-  return { valid: errors.length === 0, errors };
+function validate(expression, timezone) {
+  const result = validateSchedule(expression, timezone);
+  return { valid: result.valid, errors: result.errors };
 }
 
 /**
- * Get the next N fire times for a cron expression in a given timezone.
+ * Get the next N fire times for a cron expression.
  * @param {string} expression
- * @param {string} [timezone='UTC']
- * @param {number} [count=5]
+ * @param {object} [options]
+ * @param {string} [options.timezone]
+ * @param {number} [options.count]
+ * @param {Date}   [options.from]
  * @returns {Date[]}
  */
-function nextFireTimes(expression, timezone = 'UTC', count = 5) {
-  return getNextFireTimes(expression, timezone, count);
+function nextFireTimes(expression, options = {}) {
+  const { timezone = 'UTC', count = 5, from = new Date() } = options;
+  return getNextFireTimes(expression, timezone, count, from);
+}
+
+/**
+ * Diff two cron expressions.
+ * @param {string} exprA
+ * @param {string} exprB
+ * @returns {{ identical: boolean, changes: Array, fromHuman: string, toHuman: string }}
+ */
+function diff(exprA, exprB) {
+  return diffExpressions(exprA, exprB);
+}
+
+/**
+ * Describe the diff between two cron expressions in plain English.
+ * @param {string} exprA
+ * @param {string} exprB
+ * @returns {string}
+ */
+function diffDescription(exprA, exprB) {
+  return describeDiff(exprA, exprB);
 }
 
 module.exports = {
   describe,
   validate,
   nextFireTimes,
+  diff,
+  diffDescription,
   getPresets,
-  getPresetsByCategory,
   findPresetByExpression,
-  parseCron,
-  humanize,
+  buildScheduleInfo,
   isValidTimezone,
-  getUtcOffset,
 };
