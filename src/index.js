@@ -2,75 +2,77 @@
  * index.js — Public API for cronpilot
  */
 
-const { parseCron } = require('./parser');
-const { humanize } = require('./humanizer');
-const { getNextFireTimes, isValidTimezone } = require('./timezone');
-const { buildScheduleInfo, validateSchedule } = require('./scheduler');
-const { getPresets, findPresetByExpression } = require('./presets');
-const { diffExpressions, describeDiff } = require('./diff');
+import { parseCron } from './parser.js';
+import { humanize } from './humanizer.js';
+import { getNextFireTimes, isValidTimezone } from './timezone.js';
+import { buildScheduleInfo, validateSchedule } from './scheduler.js';
+import { diffExpressions, describeDiff } from './diff.js';
+import { exportExpression, toJson, toYaml, toCrontab, toMarkdown } from './export.js';
 
 /**
- * Describe a cron expression in plain English.
+ * Describe a cron expression in plain English
  * @param {string} expression
  * @returns {string}
  */
-function describe(expression) {
+export function describe(expression) {
   return humanize(expression);
 }
 
 /**
- * Validate a cron expression and optional timezone.
+ * Validate a cron expression and return any issues
  * @param {string} expression
- * @param {string} [timezone]
+ * @param {object} options
  * @returns {{ valid: boolean, errors: string[] }}
  */
-function validate(expression, timezone) {
-  const result = validateSchedule(expression, timezone);
-  return { valid: result.valid, errors: result.errors };
+export function validate(expression, options = {}) {
+  return validateSchedule(expression, options);
 }
 
 /**
- * Get the next N fire times for a cron expression.
+ * Get the next N fire times for a cron expression
  * @param {string} expression
- * @param {object} [options]
- * @param {string} [options.timezone]
- * @param {number} [options.count]
- * @param {Date}   [options.from]
+ * @param {object} options - { timezone, count, from }
  * @returns {Date[]}
  */
-function nextFireTimes(expression, options = {}) {
+export function nextFireTimes(expression, options = {}) {
   const { timezone = 'UTC', count = 5, from = new Date() } = options;
-  return getNextFireTimes(expression, timezone, count, from);
+  if (!isValidTimezone(timezone)) {
+    throw new Error(`Invalid timezone: ${timezone}`);
+  }
+  return getNextFireTimes(expression, { timezone, count, from });
 }
 
 /**
- * Diff two cron expressions.
- * @param {string} exprA
- * @param {string} exprB
- * @returns {{ identical: boolean, changes: Array, fromHuman: string, toHuman: string }}
+ * Diff two cron expressions and return changed fields
+ * @param {string} a
+ * @param {string} b
+ * @returns {object}
  */
-function diff(exprA, exprB) {
-  return diffExpressions(exprA, exprB);
+export function diff(a, b) {
+  return diffExpressions(a, b);
 }
 
 /**
- * Describe the diff between two cron expressions in plain English.
- * @param {string} exprA
- * @param {string} exprB
+ * Describe the diff between two cron expressions in plain English
+ * @param {string} a
+ * @param {string} b
  * @returns {string}
  */
-function diffDescription(exprA, exprB) {
-  return describeDiff(exprA, exprB);
+export function diffDescription(a, b) {
+  return describeDiff(a, b);
 }
 
-module.exports = {
-  describe,
-  validate,
-  nextFireTimes,
-  diff,
-  diffDescription,
-  getPresets,
-  findPresetByExpression,
-  buildScheduleInfo,
-  isValidTimezone,
-};
+/**
+ * Export a cron expression to a given format
+ * @param {string} expression
+ * @param {string} format - 'json' | 'yaml' | 'crontab' | 'markdown'
+ * @param {object} options
+ * @returns {string|object}
+ */
+export function exportTo(expression, format = 'json', options = {}) {
+  return exportExpression(expression, format, options);
+}
+
+export { toJson, toYaml, toCrontab, toMarkdown };
+export { buildScheduleInfo };
+export { parseCron };
