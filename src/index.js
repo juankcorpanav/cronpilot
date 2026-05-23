@@ -4,20 +4,13 @@
 
 const { parseCron } = require('./parser');
 const { humanize } = require('./humanizer');
-const { getNextFireTimes, isValidTimezone } = require('./timezone');
+const { getNextFireTimes } = require('./timezone');
 const { buildScheduleInfo, validateSchedule } = require('./scheduler');
 const { diffExpressions, describeDiff } = require('./diff');
-const { suggest, topSuggestion } = require('./suggest');
-const { explain } = require('./explain');
-const { lint, isClean } = require('./lint');
-const { normalize, areEquivalent } = require('./normalize');
-const { exportExpression } = require('./export');
-const { compareExpressions, compareSummary } = require('./compare');
-const { buildMatrix } = require('./matrix');
-const { addTags, getTags, removeTag, findByTag, listAllTags, clearTags } = require('./tag');
+const { annotate, getAnnotation, removeAnnotation, listAnnotations, searchAnnotations, clearAnnotations } = require('./annotate');
 
 /**
- * Describe a cron expression in human-readable form.
+ * Describe a cron expression in plain English.
  * @param {string} expression
  * @returns {string}
  */
@@ -26,7 +19,7 @@ function describe(expression) {
 }
 
 /**
- * Validate a cron expression.
+ * Validate a cron expression, returning structured result.
  * @param {string} expression
  * @returns {{ valid: boolean, errors: string[] }}
  */
@@ -35,18 +28,18 @@ function validate(expression) {
 }
 
 /**
- * Get the next N fire times for a cron expression.
+ * Get the next N fire times for a cron expression in a given timezone.
  * @param {string} expression
+ * @param {string} timezone
  * @param {number} [count=5]
- * @param {string} [timezone='UTC']
- * @returns {Date[]}
+ * @returns {string[]}
  */
-function nextFireTimes(expression, count = 5, timezone = 'UTC') {
-  return getNextFireTimes(expression, count, timezone);
+function nextFireTimes(expression, timezone, count = 5) {
+  return getNextFireTimes(expression, timezone, count);
 }
 
 /**
- * Diff two cron expressions.
+ * Compute the structural diff between two cron expressions.
  * @param {string} a
  * @param {string} b
  * @returns {object}
@@ -56,13 +49,23 @@ function diff(a, b) {
 }
 
 /**
- * Human-readable diff between two expressions.
+ * Human-readable description of the diff between two expressions.
  * @param {string} a
  * @param {string} b
  * @returns {string}
  */
 function diffDescription(a, b) {
-  return describeDiff(a, b);
+  return describeDiff(diffExpressions(a, b));
+}
+
+/**
+ * Build a full schedule info object for an expression.
+ * @param {string} expression
+ * @param {string} [timezone='UTC']
+ * @returns {object}
+ */
+function scheduleInfo(expression, timezone = 'UTC') {
+  return buildScheduleInfo(expression, timezone);
 }
 
 module.exports = {
@@ -71,24 +74,12 @@ module.exports = {
   nextFireTimes,
   diff,
   diffDescription,
-  suggest,
-  topSuggestion,
-  explain,
-  lint,
-  isClean,
-  normalize,
-  areEquivalent,
-  exportExpression,
-  compareExpressions,
-  compareSummary,
-  buildMatrix,
-  isValidTimezone,
-  buildScheduleInfo,
-  // Tag management
-  addTags,
-  getTags,
-  removeTag,
-  findByTag,
-  listAllTags,
-  clearTags,
+  scheduleInfo,
+  // Annotation API
+  annotate,
+  getAnnotation,
+  removeAnnotation,
+  listAnnotations,
+  searchAnnotations,
+  clearAnnotations
 };
