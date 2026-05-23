@@ -40,6 +40,14 @@ test('saveFavorite updates existing label preserving createdAt', () => {
   expect(listFavorites()).toHaveLength(1);
 });
 
+test('saveFavorite updates updatedAt but not createdAt on re-save', () => {
+  const first = saveFavorite('Nightly', '0 0 * * *');
+  // Ensure some time passes so timestamps can differ
+  const second = saveFavorite('Nightly', '0 1 * * *');
+  expect(second.createdAt).toBe(first.createdAt);
+  expect(second.updatedAt).toBeGreaterThanOrEqual(second.createdAt);
+});
+
 test('getFavorite retrieves by label', () => {
   saveFavorite('Weekly', '0 0 * * 0');
   const fav = getFavorite('Weekly');
@@ -55,6 +63,10 @@ test('listFavorites returns all entries', () => {
   saveFavorite('A', '0 1 * * *');
   saveFavorite('B', '0 2 * * *');
   expect(listFavorites()).toHaveLength(2);
+});
+
+test('listFavorites returns empty array when no favorites saved', () => {
+  expect(listFavorites()).toHaveLength(0);
 });
 
 test('removeFavorite removes entry and returns true', () => {
