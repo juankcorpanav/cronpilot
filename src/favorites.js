@@ -39,11 +39,17 @@ function getFavorite(label) {
 }
 
 /**
- * List all saved favourites.
+ * List all saved favourites, optionally sorted by a field.
+ * @param {string} [sortBy='label'] - field to sort by ('label' | 'createdAt' | 'updatedAt')
  * @returns {Array}
  */
-function listFavorites() {
-  return Array.from(_favorites.values());
+function listFavorites(sortBy = 'label') {
+  const entries = Array.from(_favorites.values());
+  return entries.sort((a, b) => {
+    const valA = a[sortBy] ?? '';
+    const valB = b[sortBy] ?? '';
+    return valA < valB ? -1 : valA > valB ? 1 : 0;
+  });
 }
 
 /**
